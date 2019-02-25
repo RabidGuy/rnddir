@@ -2,10 +2,6 @@
 #
 # - - - - - - - - - - - - - - - - - - -
 #
-# Update config file to JSON so that values can be stored in associative array.
-#
-# - - - - - - - - - - - - - - - - - - -
-#
 # Keep track of recent output in order to avoid sudden repeats.
 #
 #   Use Method 3.
@@ -21,13 +17,14 @@
 #       If no choice is made within that many attempts, use directory selected at
 #       last iteration.
 
+import json
 import os
 import random
 
 
-FILENAME_CONFIG = ".rnddircfg"
+FILENAME_CONFIG = ".rnddircfg.json"
 # FILENAME_HISTORY = ".rnddirhist"
-# DEFAULT_HISTORY_LINES = 5
+# DEFAULT_HISTORY_LENGTH = 5
 
 
 def get_local_directories():
@@ -43,20 +40,33 @@ def get_local_directories():
 
 def choose_random_directory():
     ldirs = get_local_directories()
-    return random.choice(ldirs) + os.sep
+    return random.choice(ldirs)
+
+
+def get_directory_config(directory):
+    """Get configuration options for chosen directory.
+
+    Returns config object if valid config file exists,
+    else returns None.
+
+    """
+    config_path = os.sep.join([directory, FILENAME_CONFIG])
+    if os.path.exists(config_path):
+        with open(os.sep.join([directory, FILENAME_CONFIG])) as f:
+            config = json.load(f)
+        return config
+    else:
+        return None
 
 
 if __name__ == "__main__":
     directory = choose_random_directory()
-    try:
-        with open(os.sep.join([directory, FILENAME_CONFIG])) as f:
-            line = f.readline().strip()
-            if line:
-                out = line + ("\n%s" % directory)
-            else:
-                out = ("No name given in %s" %
-                       (directory + FILENAME_CONFIG)
-                      ) + ("\n%s" % directory)
-    except FileNotFoundError:
+    config = get_directory_config(directory)
+    if config:
+        try:
+            out = "\n".join([config["name"], directory])
+        except KeyError:
+            out = directory
+    else:
         out = directory
     print(out)
